@@ -1,5 +1,6 @@
 rm(list = ls()) ;  gc(); cat("\014")
 
+# load results
 load(file = paste0(getwd(), "/type2-error/simulation_type2.Rdata"))
 
 

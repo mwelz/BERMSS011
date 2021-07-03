@@ -1,38 +1,41 @@
 rm(list = ls()) ;  gc(); cat("\014")
 
+# fix seed
 set.seed(1)
-n <- 100
+
+# initialize
+n       <- 100
 alpha.y <- 0
 alpha.m <- 0
 theta.y <- 1
 theta.m <- 1
-beta <- 1
+beta    <- 1
 true.indirect.effect <- theta.m * beta
 
 # initialize contamination
-R <- 100 # number of repetitions
+R             <- 100 # number of repetitions
 contam.levels <- 0:20
 x.contam.arr  <- rnorm(max(contam.levels), mean = -8, sd = 1)
 
-# initialize performance measures
-coverage.arr <- array(NA_real_, dim = c(R, length(contam.levels), 2), dimnames = list(1:R, paste0("n.contam.", contam.levels), c("OLS", "MM")))
+# initialize arrays for performance measures
+coverage.arr <- array(NA_real_, dim = c(R, length(contam.levels), 2), 
+                      dimnames = list(1:R, paste0("n.contam.", contam.levels), c("OLS", "MM")))
 power.arr <- coverage.arr
 
 for(r in 1:R){
   
-  # generate data
-  x <- rnorm(n, mean = 0, sd = 1)
-  m <- rnorm(n, mean = 0, sd = 1)
-  eps.y <- rnorm(n)
-  eps.m <- rnorm(n)
+  # sample variables
+  x     <- rnorm(n, mean = 0, sd = 1)
+  eps.y <- rnorm(n, mean = 0, sd = 1)
+  eps.m <- rnorm(n, mean = 0, sd = 1)
   
-  # DGP
+  # data generating process
   m <- alpha.m + theta.m * x + eps.m
   y <- alpha.y + theta.y * x + beta * m + eps.y
 
 
-  ### fit model on contaminated data ----
-  # contaminate data in x-dimension (goal: test shall make type 2 error)
+  ## fit model on contaminated data 
+  # contaminate data in x-dimension (goal: classical test shall make type 2 error)
   
   for(i in contam.levels){
     
@@ -67,13 +70,14 @@ for(r in 1:R){
       test.mm.boot_contam$ci[1] < true.indirect.effect & true.indirect.effect < test.mm.boot_contam$ci[2]
     
     power.arr[r, i+1, "OLS"] <- 
-      !(test.ols.boot_contam$ci[1] < 0 & 0 < test.ols.boot_contam$ci[2]) # significance?
+      !(test.ols.boot_contam$ci[1] < 0 & 0 < test.ols.boot_contam$ci[2]) 
     
     power.arr[r, i+1, "MM"] <- 
-      !(test.mm.boot_contam$ci[1] < 0 & 0 < test.mm.boot_contam$ci[2]) # significance?
+      !(test.mm.boot_contam$ci[1] < 0 & 0 < test.mm.boot_contam$ci[2])
     
   } # FOR contam.levels
 } # FOR r
 
+# save results
 type2.list <- list(coverage.arr = coverage.arr, power.arr = power.arr)
 save(type2.list, file = paste0(getwd(), "/type2-error/simulation_type2.Rdata"))
